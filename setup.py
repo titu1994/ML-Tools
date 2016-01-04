@@ -1,9 +1,9 @@
 from distutils.core import setup
 
 setup(
-        name='ML Tools',
-        version='1.0.1',
-        packages=['pydot-ng', 'graphviz', 'pandas', 'numpy', 'scikit-learn', 'matplotlib', "ml_metrics"],
+        name='ML-Tools',
+        version='1.0.2',
+        packages=['ml-tools', 'ml-tools.MLScripts'],
         url='',
         license='',
         author='Somshubra Majumdar',
