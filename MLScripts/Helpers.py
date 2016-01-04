@@ -27,7 +27,11 @@ def printXGBoostTree(fn, xgBoostTree, numTrees=2, yesColor='#0000FF', noColor='#
     :param noColor (Optional, Default = '#FF0000'): Color of wrong output classes
     """
     from subprocess import check_call
-    import xgboost as xgb
+    if checkModuleExists("xgboost"):
+        import xgboost as xgb
+    else:
+        print("Requires xgboost library. Cannot print xgboost tree")
+        return
 
     with open(fn + ".dot", "w") as file:
         val = xgb.to_graphviz(xgBoostTree, num_trees=numTrees, yes_color=yesColor, no_color=noColor)
@@ -54,15 +58,27 @@ def printXGBFeatureImportances(featurenames, xgbTree):
     :param featurenames: list of feature names
     :param xgbTree: list of feature importance values eg. decisionTree.feature_importances_
     """
-    import seaborn as sns
-    import xgboost as xgb
+    snsAvailable = False
+    if checkModuleExists("seaborn"):
+        import seaborn as sns
+        sns.set_style("white")
+        snsAvailable = True
+    else:
+        import matplotlib.pyplot as plt
+
+    if checkModuleExists("xgboost"):
+        import xgboost as xgb
+    else:
+        print("Requires xgboost library. Cannot print xgboost tree importances")
+        return
 
     featureNames = featurenames
     featureImportances = [(feature, importance)
                           for feature, importance in zip(featureNames, sorted(xgbTree.booster().get_fscore(), key=lambda x: x[1]))]
     print("Feature Importances : \n", featureImportances)
     featureImportance = xgb.plot_importance(xgbTree)
-    sns.plt.show()
+    if snsAvailable: sns.plt.show()
+    else: plt.show()
 
 
 def writeOutputFile(filename, headerRow, zippedRows):
@@ -83,3 +99,9 @@ def writeOutputFile(filename, headerRow, zippedRows):
     csvWriter.writerows(zip(*zippedRows))
     f.close()
 
+def checkModuleExists(modulename):
+    try:
+        __import__(modulename)
+    except ImportError:
+        return False
+    return True
