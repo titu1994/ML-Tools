@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
         name='ML-Tools',
         version='1.0.2',
-        packages=['ml-tools', 'ml-tools.MLScripts'],
+        packages=['MLScripts'],
         url='',
         license='',
         author='Somshubra Majumdar',

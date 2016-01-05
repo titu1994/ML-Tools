@@ -56,7 +56,7 @@ def printXGBFeatureImportances(featurenames, xgbTree):
     Prints the feature importances of Classifiers or Regressors in the xgboost package
 
     :param featurenames: list of feature names
-    :param xgbTree: list of feature importance values eg. decisionTree.feature_importances_
+    :param xgbTree: XGBTree
     """
     snsAvailable = False
     if checkModuleExists("seaborn"):
