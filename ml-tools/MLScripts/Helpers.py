@@ -73,12 +73,16 @@ def printXGBFeatureImportances(featurenames, xgbTree):
         return
 
     featureNames = featurenames
-    featureImportances = [(feature, importance)
-                          for feature, importance in zip(featureNames, sorted(xgbTree.booster().get_fscore(), key=lambda x: x[1]))]
-    print("Feature Importances : \n", featureImportances)
-    featureImportance = xgb.plot_importance(xgbTree)
+    with open("tempfmap.fmap", "w") as f:
+        for i, feature in enumerate(featureNames):
+            f.write("%d\t%s\tq\n" % (i, feature))
+
+    xgb.plot_importance(xgbTree.booster().get_fscore(fmap="tempfmap.fmap"), )
     if snsAvailable: sns.plt.show()
     else: plt.show()
+
+    import os
+    os.remove("tempfmap.fmap")
 
 
 def writeOutputFile(filename, headerRow, zippedRows):
