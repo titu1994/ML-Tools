@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
         name='ML-Tools',
-        version='1.0.2',
+        version='1.0.3',
         packages=['MLScripts'],
         url='',
         license='',

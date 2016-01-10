@@ -85,23 +85,36 @@ def printXGBFeatureImportances(featurenames, xgbTree):
     os.remove("tempfmap.fmap")
 
 
-def writeOutputFile(filename, headerRow, zippedRows):
+def writeOutputFile(filename, headerColumns, submissionRowsList, dtypes):
     """
     Writes the output of the rows into the filename specified
 
     :param filename: Output filename
-    :param headingRow: Header row
-    :param zippedRows: zipped file of all the output rows
-    :return:
+    :param headingRow: list of header column names
+    :param zippedRows: list of lists.
+                       Ex: df["A"] and yPredicted must be written.
+                           Then,
+                           [df["A"], yPredicted] must be this argument
+    :param dtypes: list of string dtypes that are to be cast.
+                   Possible dtypes are :
+                   int, int8, int16, int32, int64,
+                   float, float32, float64,
+                   object, -> (This is the type for string type data),
+                   category -> Special type to denote importantce of int or float var,
+                   bool,
+                   datetime, datetime64
     """
-    import csv
+    import pandas as pd
 
-    f = open(filename + ".csv", "w", newline="")
-    csvWriter = csv.writer(f)
-    csvWriter.writerow(headerRow)
+    submission = pd.DataFrame()
+    if len(headerColumns) == len(submissionRowsList):
+        for i in range(len(headerColumns)):
+            submission[headerColumns[i]] = submissionRowsList[i]
+            submission[headerColumns[i]] = submission[headerColumns[i]].astype(dtypes[i])
 
-    csvWriter.writerows(zip(*zippedRows))
-    f.close()
+        submission.to_csv(filename, index=False)
+    else:
+        print("Number of headerColumns not same as number of lists of rows that must be written as o/p file")
 
 def checkModuleExists(modulename):
     try:
