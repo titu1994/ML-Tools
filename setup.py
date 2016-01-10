@@ -2,8 +2,8 @@ from distutils.core import setup
 
 setup(
         name='ML-Tools',
-        version='1.0.3',
-        packages=['MLScripts'],
+        version='1.0.4',
+        packages=['MLScripts', 'MLScripts.Ensemble'],
         url='',
         license='',
         author='Somshubra Majumdar',
