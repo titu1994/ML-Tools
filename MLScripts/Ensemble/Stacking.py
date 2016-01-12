@@ -14,8 +14,10 @@ Unlike bagging and boosting, stacking may be (and normally is) used to combine m
 Note that steps 1) to 3) are the same as cross-validation, but instead of using a winner-takes-all approach,
 we combine the base learners, possibly nonlinearly.
 """
+from MLScripts.Helpers import checkModuleExists
 import numpy as np
 from sklearn.cross_validation import StratifiedKFold
+
 
 class StackedClassifier:
 
@@ -24,14 +26,31 @@ class StackedClassifier:
         self.blendclf = blendclf
         self.verbose = verbose
 
-    def fit(self, X, Y, useProbasInstead=False):
+        if checkModuleExists("xgboost"):
+            import xgboost as xgb
+            self.xgbclassifier = xgb.XGBClassifier
+            self.importedXGB = True
+        else:
+            self.importedXGB = False
+
+    def fit(self, X, Y, useProbasInstead=False, xgb_eval_metric=None, xgb_eval_set=None, xgb_early_stopping_rounds=None):
         self.useProbasInstead = useProbasInstead
         blendTrain = np.zeros((X.shape[0], len(self.baseclfs)))
 
         for i, clf in enumerate(self.baseclfs):
             if self.verbose: print("StackedClassifier : Begun training base classifier %d" % ((i+1)))
-            clf.fit(X, Y)
+
+            if self.importedXGB:
+                if isinstance(clf, self.xgbclassifier):
+                    clf.fit(X, Y, verbose=self.verbose, eval_metric=xgb_eval_metric, eval_set=xgb_eval_set,
+                            early_stopping_rounds=xgb_early_stopping_rounds)
+                else:
+                    clf.fit(X, Y)
+            else:
+                clf.fit(X, Y)
+
             blendTrain = self._computeBlend(blendTrain, i, clf, X, useProbasInstead)
+
             if self.verbose: print("StackedClassifier : Finished training base classifier %d" % ((i+1)))
 
         self.blendclf.fit(blendTrain, Y)
