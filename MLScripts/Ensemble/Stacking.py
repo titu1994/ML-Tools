@@ -90,11 +90,32 @@ class StackedClassifier:
         if self.verbose: print("StackedClassifier : Finished predicting")
         return yPred
 
+    def predict_proba(self, X, autoScale=False):
+        blendPredict = np.zeros((X.shape[0], len(self.baseclfs)))
+
+        for i, clf in enumerate(self.baseclfs):
+            if self.verbose: print("StackedClassifier : Begun predicting base classifier %d" % ((i+1)))
+            blendPredict = self._computeBlend(blendPredict, i, clf, X)
+            if self.verbose: print("StackedClassifier : Finished predicting base classifier %d" % ((i+1)))
+
+        if self.verbose: print("StackedClassifier : Begun predicting with the Blending Classifier")
+        yPred = self._predict_proba(blendPredict)
+        if self.verbose: print("StackedClassifier : Finished predicting Blend Classifier")
+
+        if autoScale:
+            yPred = (yPred - yPred.min()) / (yPred.max() - yPred.min())
+
+        if self.verbose: print("StackedClassifier : Finished predicting")
+        return yPred
+
     def _computeBlend(self, blender, i, clf, x):
         blender[:, i] = clf.predict_proba(x)[:, 1]
         return blender
 
     def _predict(self, blender):
+        return self.blendclf.predict(blender)
+
+    def _predict_proba(self, blender):
         return self.blendclf.predict_proba(blender)[:, 1]
 
 
@@ -146,6 +167,30 @@ class StackedClassifierCV(StackedClassifier):
             blendTest[:,j] = dataset_blend_test_j.mean(1)
 
         yPred = self._predict(blendTest)
+
+        if autoScale:
+            yPred = (yPred - yPred.min()) / (yPred.max() - yPred.min())
+
+        if self.verbose: print("StackedClassifier : Finished predicting")
+        return
+
+    def predict_proba(self, X, autoScale=False):
+        blendTest = np.zeros((X.shape[0], len(self.baseclfs)))
+
+        for j, clf in enumerate(self.baseclfs):
+            if self.verbose: print("StackedClassifier : Begun predicting base classifier %d" % ((j+1)))
+            dataset_blend_test_j = np.zeros((X.shape[0], len(self.skf)))
+
+            for i, (train, test) in enumerate(self.skf):
+                if self.verbose: print("CLF %d : Fold %d" % ((j+1),(i+1)))
+
+                dataset_blend_test_j[:, i] = clf.predict_proba(X)[:,1]
+
+                if self.verbose: print("CLF %d : Fold %d finished" % ((j+1),(i+1)))
+
+            blendTest[:,j] = dataset_blend_test_j.mean(1)
+
+        yPred = self._predict_proba(blendTest)
 
         if autoScale:
             yPred = (yPred - yPred.min()) / (yPred.max() - yPred.min())
