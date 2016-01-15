@@ -118,6 +118,9 @@ class StackedClassifier:
     def _predict_proba(self, blender):
         return self.blendclf.predict_proba(blender)[:, 1]
 
+    def score(self, X, y):
+        return self.blendclf.score(X, y)
+
 
 class StackedClassifierCV(StackedClassifier):
 
