@@ -18,6 +18,19 @@ from MLScripts.Helpers import checkModuleExists
 import numpy as np
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.calibration import CalibratedClassifierCV
+import sklearn.linear_model as linear
+
+def createBlendingClassifier(solver="liblinear", tol=1e-10, fit_intercepts=True, cv=None,):
+    if cv != None:
+        return linear.LogisticRegression(tol=tol, fit_intercept=fit_intercepts, solver=solver, )
+    else:
+        return linear.LogisticRegressionCV(cv=cv, tol=tol, fit_intercept=fit_intercepts,)
+
+def createBlendingRegressor(solver="liblinear", tol=1e-10, cv=None,):
+    if cv != None:
+        return createBlendingClassifier(solver, tol, fit_intercepts=False, )
+    else:
+        return createBlendingClassifier(solver, tol, fit_intercepts=False, cv=cv)
 
 class StackedClassifier:
 
@@ -32,12 +45,11 @@ class StackedClassifier:
                 clfs.append(calibratedCLF)
 
         self.baseclfs = clfs
+        self.blendclf = blendclf
 
-        if hasattr(blendclf, 'predict_proba'):
-            self.blendclf = blendclf
-        else:
-            calibratedBlendCLF = CalibratedClassifierCV(blendclf)
-            self.blendclf = calibratedBlendCLF
+        if not hasattr(blendclf, 'predict_proba'):
+            self.blendclf_has_predict_proba = False
+        else: self.blendclf_has_predict_proba = True
 
         self.verbose = verbose
 
@@ -116,7 +128,11 @@ class StackedClassifier:
         return self.blendclf.predict(blender)
 
     def _predict_proba(self, blender):
-        return self.blendclf.predict_proba(blender)[:, 1]
+        if self.blendclf_has_predict_proba:
+            return self.blendclf.predict_proba(blender)[:, 1]
+        else:
+            print("StackedClassifier : Blending CLF does not possess the attribute 'predict_proba'. Switching to predict()")
+            return self._predict(blender)
 
     def score(self, X, y):
         return self.blendclf.score(X, y)
