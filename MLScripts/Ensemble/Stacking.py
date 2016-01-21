@@ -191,7 +191,7 @@ class StackedClassifierCV(StackedClassifier):
             yPred = (yPred - yPred.min()) / (yPred.max() - yPred.min())
 
         if self.verbose: print("StackedClassifier : Finished predicting")
-        return
+        return yPred
 
     def predict_proba(self, X, autoScale=False):
         blendTest = np.zeros((X.shape[0], len(self.baseclfs)))
