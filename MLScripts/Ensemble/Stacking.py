@@ -141,7 +141,7 @@ class StackedClassifier:
 class StackedClassifierCV(StackedClassifier):
 
     def __init__(self, baseclfs, blendclf, cvFolds=3, split=0.8, verbose=False):
-        super().__init__(self, baseclfs, blendclf)
+        super().__init__(baseclfs, blendclf, verbose=verbose)
         self.cvFolds = cvFolds
         self.split = split
 
