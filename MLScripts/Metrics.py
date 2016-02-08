@@ -47,6 +47,15 @@ def rmsle2(y, ypred):
     """
     return mlmetrics.rmsle(y, ypred)
 
+def classificationReport(yTest, yPred):
+    """
+    Reports a variety of classification scores
+
+    :param yTest: list (int, float)
+    :param yPred: list (int, float)
+    :return: [classes, (precision, recall, f1-score, support)]
+    """
+
 def trainingAccuracy(yTest, yPredicted):
     """
     Calculates Accuracy Score

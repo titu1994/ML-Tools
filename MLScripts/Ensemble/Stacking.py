@@ -77,8 +77,6 @@ class StackedClassifier:
 
             if self.verbose: print("StackedClassifier : Begun training the Blending Classifier")
             blendTrain = self._computeBlend(blendTrain, i, clf, X)
-            if self.verbose: print("StackedClassifier : Finished training Blend Classifier")
-
             if self.verbose: print("StackedClassifier : Finished training base classifier %d" % ((i+1)))
 
         self.blendclf.fit(blendTrain, Y)
