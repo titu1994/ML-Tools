@@ -43,6 +43,31 @@ class StackedGeneralizer(object):
         self.verbose = verbose
         self.base_models_cv = None
 
+    def fit(self, X, y):
+        X_blend = self.__fitTransformBaseModels(X, y)
+        self.__fitBlendingModel(X_blend, y)
+
+    def predict(self, X):
+        # perform model averaging to get predictions
+        X_blend = self.__transformBaseModels(X)
+        predictions = self.__transformBlendingModel(X_blend)
+        pred_classes = [np.argmax(p) for p in predictions]
+        return pred_classes
+
+    def predict_proba(self, X):
+        # perform model averaging to get predictions
+        X_blend = self.__transformBaseModels(X)
+        predictions = self.__transformBlendingModel(X_blend)
+
+        return predictions
+
+    def evaluate(self, y, y_pred):
+        print(classification_report(y, y_pred))
+        print('Confusion Matrix:')
+        print(confusion_matrix(y, y_pred))
+        return(accuracy_score(y, y_pred))
+
+
     def __fitBaseModels(self, X, y):
         if self.verbose:
             print('Fitting Base Models...')
@@ -138,29 +163,6 @@ class StackedGeneralizer(object):
         predictions = cv_predictions.mean(0)
         return predictions
 
-    def predict_proba(self, X):
-        # perform model averaging to get predictions
-        X_blend = self.__transformBaseModels(X)
-        predictions = self.__transformBlendingModel(X_blend)
-
-        return predictions
-
-    def predict(self, X):
-        # perform model averaging to get predictions
-        X_blend = self.__transformBaseModels(X)
-        predictions = self.__transformBlendingModel(X_blend)
-        pred_classes = [np.argmax(p) for p in predictions]
-        return pred_classes
-
-    def fit(self, X, y):
-        X_blend = self.__fitTransformBaseModels(X, y)
-        self.__fitBlendingModel(X_blend, y)
-
-    def evaluate(self, y, y_pred):
-        print(classification_report(y, y_pred))
-        print('Confusion Matrix:')
-        print(confusion_matrix(y, y_pred))
-        return(accuracy_score(y, y_pred))
 
 if __name__ == "__main__":
     from sklearn.datasets import load_digits
