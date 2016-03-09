@@ -116,6 +116,82 @@ def writeOutputFile(filename, headerColumns, submissionRowsList, dtypes):
     else:
         print("Number of headerColumns not same as number of lists of rows that must be written as o/p file")
 
+def getClfFeatureImportances(X, y, max_features=None, n_estimators=100, random_state=0) -> list:
+    """
+    Utilizes ExtraTreeClassifier to determine best features
+
+    Use :
+    bestFeatureIndices = getClfFeatureIndices(X, y)
+    df = df[df.columns[bestFeatureIndices]]
+
+    :param X: Numpy array
+    :param y: Numpy array
+    :param max_features: maximum number of features required. If None, will return all features
+    :param n_estimators: number of estimators for ExtraTreeClassifier. Increase if very large number of features
+    :param random_state:
+    :return: list of max_feature / all feature importances in sorted order
+    """
+    from sklearn.ensemble import ExtraTreesClassifier
+    import numpy as np
+
+    numFeatures = X.shape[1]
+    if max_features > numFeatures: max_features = numFeatures
+    if max_features == None: max_features = numFeatures
+
+    model = ExtraTreesClassifier(n_estimators=n_estimators, random_state=random_state, n_jobs=-1)
+    model.fit(X, y)
+
+    importances = model.feature_importances_
+    indices = np.argsort(importances)[::-1]
+
+    print("Feature ranking:")
+    bestFeatureIndices = []
+
+    for f in range(numFeatures):
+        print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
+        bestFeatureIndices.append(indices[f])
+
+    bestFeatureIndices = bestFeatureIndices[:max_features]
+    return bestFeatureIndices
+
+def getRegFeatureImportances(X, y, max_features=None, n_estimators=100, random_state=0) -> list:
+    """
+    Utilizes ExtraTreeRegressor to determine best features
+
+    Use :
+    bestFeatureIndices = getClfFeatureIndices(X, y)
+    df = df[df.columns[bestFeatureIndices]]
+
+    :param X: Numpy array
+    :param y: Numpy array
+    :param max_features: maximum number of features required. If None, will return all features
+    :param n_estimators: number of estimators for ExtraTreeClassifier. Increase if very large number of features
+    :param random_state:
+    :return: list of max_feature / all feature importances in sorted order
+    """
+    from sklearn.ensemble import ExtraTreesRegressor
+    import numpy as np
+
+    numFeatures = X.shape[1]
+    if max_features > numFeatures: max_features = numFeatures
+    if max_features == None: max_features = numFeatures
+
+    model = ExtraTreesRegressor(n_estimators=n_estimators, random_state=random_state, n_jobs=-1)
+    model.fit(X, y)
+
+    importances = model.feature_importances_
+    indices = np.argsort(importances)[::-1]
+
+    print("Feature ranking:")
+    bestFeatureIndices = []
+
+    for f in range(numFeatures):
+        print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
+        bestFeatureIndices.append(indices[f])
+
+    bestFeatureIndices = bestFeatureIndices[:max_features]
+    return bestFeatureIndices
+
 def checkModuleExists(modulename):
     try:
         __import__(modulename)
