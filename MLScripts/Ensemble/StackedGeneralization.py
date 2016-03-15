@@ -163,6 +163,10 @@ class StackedGeneralizer(object):
         predictions = cv_predictions.mean(0)
         return predictions
 
+    def score(self, X, y, sample_weight=None):
+        from sklearn.metrics import accuracy_score
+        return accuracy_score(y, self.predict(X), sample_weight=sample_weight)
+
 
 if __name__ == "__main__":
     from sklearn.datasets import load_digits
