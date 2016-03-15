@@ -1,7 +1,10 @@
 import numpy as np
 from sklearn.cross_validation import KFold
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+from sklearn.base import BaseEstimator, ClassifierMixin
 from copy import copy
+
+from sklearn.cross_validation import cross_val_score
 
 def getPredictions(model, X):
     if hasattr(model, 'predict_proba'):
@@ -14,7 +17,7 @@ def getPredictions(model, X):
 
     return pred
 
-class StackedGeneralizer(object):
+class StackedGeneralizer(BaseEstimator, ClassifierMixin):
     """Base class for stacked generalization classifier models
     """
 
@@ -66,7 +69,6 @@ class StackedGeneralizer(object):
         print('Confusion Matrix:')
         print(confusion_matrix(y, y_pred))
         return(accuracy_score(y, y_pred))
-
 
     def __fitBaseModels(self, X, y):
         if self.verbose:
@@ -163,10 +165,6 @@ class StackedGeneralizer(object):
         predictions = cv_predictions.mean(0)
         return predictions
 
-    def score(self, X, y, sample_weight=None):
-        from sklearn.metrics import accuracy_score
-        return accuracy_score(y, self.predict(X), sample_weight=sample_weight)
-
 
 if __name__ == "__main__":
     from sklearn.datasets import load_digits
@@ -203,3 +201,5 @@ if __name__ == "__main__":
     preds = sg.predict(X[n_train:])
     print("PostProcessed Predictions Class : ", preds)
     _ = sg.evaluate(y[n_train:], preds)
+
+    sg.verbose = False
