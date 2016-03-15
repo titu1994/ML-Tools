@@ -168,7 +168,7 @@ if __name__ == "__main__":
     from sklearn.datasets import load_digits
     from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
     from sklearn.linear_model import LogisticRegression
-    import xgboost as xgb
+
     VERBOSE = True
     N_FOLDS = 5
 
@@ -193,6 +193,7 @@ if __name__ == "__main__":
 
     # fit model
     sg.fit(X[:n_train],y[:n_train])
+
     # test accuracy
     pred_probas = sg.predict_proba(X[n_train:])
     preds = sg.predict(X[n_train:])
