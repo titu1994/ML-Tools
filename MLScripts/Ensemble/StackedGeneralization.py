@@ -4,8 +4,6 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 from sklearn.base import BaseEstimator, ClassifierMixin
 from copy import copy
 
-from sklearn.cross_validation import cross_val_score
-
 def getPredictions(model, X):
     if hasattr(model, 'predict_proba'):
         pred = model.predict_proba(X)
@@ -16,6 +14,15 @@ def getPredictions(model, X):
             pred = pred[:,None]
 
     return pred
+
+
+def checkModuleExists(modulename):
+    try:
+        __import__(modulename)
+    except ImportError:
+        return False
+    return True
+
 
 class StackedGeneralizer(BaseEstimator, ClassifierMixin):
     """Base class for stacked generalization classifier models
@@ -47,20 +54,29 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
         self.base_models_cv = None
 
     def fit(self, X, y):
-        X_blend = self.__fitTransformBaseModels(X, y)
-        self.__fitBlendingModel(X_blend, y)
+        X_blend = self._fitTransformBaseModels(X, y)
+        self._fitBlendingModel(X_blend, y)
+
+    def fit_nn(self, X, y, batch_size=128, nb_epochs=100, show_accuracy=True, verbose=0, callback=[], validation_split=0.,
+               validation_data=None):
+        if not checkModuleExists("keras"):
+            self.fit(X, y)
+        else:
+            X_blend = self._fitTransformBaseModels(X, y)
+            self._fitBlendingModel_nn(X_blend, y, batch_size, nb_epochs, show_accuracy, verbose, callback, validation_split,
+               validation_data)
 
     def predict(self, X):
         # perform model averaging to get predictions
-        X_blend = self.__transformBaseModels(X)
-        predictions = self.__transformBlendingModel(X_blend)
+        X_blend = self._transformBaseModels(X)
+        predictions = self._transformBlendingModel(X_blend)
         pred_classes = [np.argmax(p) for p in predictions]
         return pred_classes
 
     def predict_proba(self, X):
         # perform model averaging to get predictions
-        X_blend = self.__transformBaseModels(X)
-        predictions = self.__transformBlendingModel(X_blend)
+        X_blend = self._transformBaseModels(X)
+        predictions = self._transformBlendingModel(X_blend)
 
         return predictions
 
@@ -70,7 +86,7 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
         print(confusion_matrix(y, y_pred))
         return(accuracy_score(y, y_pred))
 
-    def __fitBaseModels(self, X, y):
+    def _fitBaseModels(self, X, y):
         if self.verbose:
             print('Fitting Base Models...')
 
@@ -98,7 +114,7 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
                 # add trained model to list of CV'd models
                 self.base_models_cv[model_name].append(copy(model))
 
-    def __transformBaseModels(self, X):
+    def _transformBaseModels(self, X):
         # predict via model averaging
         predictions = []
         for key in sorted(self.base_models_cv.keys()):
@@ -119,11 +135,11 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
         predictions = np.hstack(predictions)
         return predictions
 
-    def __fitTransformBaseModels(self, X, y):
-        self.__fitBaseModels(X, y)
-        return self.__transformBaseModels(X)
+    def _fitTransformBaseModels(self, X, y):
+        self._fitBaseModels(X, y)
+        return self._transformBaseModels(X)
 
-    def __fitBlendingModel(self, X_blend, y):
+    def _fitBlendingModel(self, X_blend, y):
         if self.verbose:
             model_name = "%s" % self.blending_model.__repr__()
             print('Fitting Blending Model:\n%s' % model_name)
@@ -146,7 +162,32 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
             # add trained model to list of CV'd models
             self.blending_model_cv.append(model)
 
-    def __transformBlendingModel(self, X_blend):
+    def _fitBlendingModel_nn(self, X_blend, y, batch_size=128, nb_epochs=100, show_accuracy=True, verbose=0, callback=[], validation_split=0.,
+               validation_data=None):
+        if self.verbose:
+            model_name = "%s" % self.blending_model.__repr__()
+            print('Fitting Blending Model:\n%s' % model_name)
+
+        kf = list(KFold(y.shape[0], self.n_folds))
+        # run  CV
+        self.blending_model_cv = []
+
+        for j, (train_idx, test_idx) in enumerate(kf):
+            if self.verbose:
+                print('Fold %d' % j)
+
+            X_train = X_blend[train_idx]
+            y_train = y[train_idx]
+
+            model = copy(self.blending_model)
+
+            model.fit(X_train, y_train, batch_size=batch_size, nb_epoch=nb_epochs, show_accuracy=show_accuracy,
+                      verbose=verbose, callback=callback, validation_split=validation_split, validation_data=validation_data)
+
+            # add trained model to list of CV'd models
+            self.blending_model_cv.append(model)
+
+    def _transformBlendingModel(self, X_blend):
         global cv_predictions
 
         # make predictions from averaged models
