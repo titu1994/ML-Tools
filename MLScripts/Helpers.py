@@ -51,13 +51,17 @@ def printFeatureImportances(featurenames, featureImportances):
     featureImportances = sorted(featureImportances, key=lambda x: x[1], reverse=True)
     print("Feature Importances : \n", featureImportances)
 
-def printXGBFeatureImportances(featurenames, xgbTree):
+def printXGBFeatureImportances(featurenames, xgbTree, save_figure=False, figure_name="feature_importance_xgb.png", remove_feature_map=True):
     """
     Prints the feature importances of Classifiers or Regressors in the xgboost package
 
     :param featurenames: list of feature names
     :param xgbTree: XGBTree
+    :param remove_feature_map: Delete temporary feature map after creation. Default is True
     """
+    import operator
+    import pandas as pd
+
     snsAvailable = False
     if checkModuleExists("seaborn"):
         import seaborn as sns
@@ -73,16 +77,32 @@ def printXGBFeatureImportances(featurenames, xgbTree):
         return
 
     featureNames = featurenames
-    with open("tempfmap.fmap", "w") as f:
+    with open("xgb.fmap", "w") as f:
         for i, feature in enumerate(featureNames):
             f.write("%d\t%s\tq\n" % (i, feature))
 
-    xgb.plot_importance(xgbTree.booster().get_fscore(fmap="tempfmap.fmap"), )
-    if snsAvailable: sns.plt.show()
-    else: plt.show()
+    importances = xgb.plot_importance(xgbTree.booster().get_fscore(fmap="xgb.fmap"))
+    importances = sorted(importances.items(), key=operator.itemgetter(1))
 
-    import os
-    os.remove("tempfmap.fmap")
+    df = pd.DataFrame(importances, columns=['feature', 'fscore'])
+    df['fscore'] = df['fscore'] / df['fscore'].sum()
+
+    df.plot(kind='barh', x='feature', y='fscore', legend=False)
+
+    if snsAvailable:
+        sns.plt.title('XGBoost Feature Importance')
+        sns.plt.xlabel('relative importance')
+        sns.plt.show()
+    else:
+        plt.title('XGBoost Feature Importance')
+        plt.xlabel('relative importance')
+        plt.show()
+
+    if save_figure: plt.gcf().savefig(figure_name)
+
+    if remove_feature_map:
+        import os
+        os.remove("xgb.fmap")
 
 
 def writeOutputFile(filename, headerColumns, submissionRowsList, dtypes):
@@ -191,6 +211,20 @@ def getRegFeatureImportances(X, y, max_features=None, n_estimators=100, random_s
 
     bestFeatureIndices = bestFeatureIndices[:max_features]
     return bestFeatureIndices
+
+def createFeatureMap(features, filename="xgb.fmap"):
+    """
+    Create feature map using the features of the data set.
+
+    :param features: List of string (features)
+    :param filename: Optional. Output file name
+    """
+    with open(filename, 'w') as outfile:
+        i = 0
+        for feat in features:
+            outfile.write('{0}\t{1}\tq\n'.format(i, feat))
+            i = i + 1
+
 
 def checkModuleExists(modulename):
     try:
