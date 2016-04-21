@@ -81,7 +81,7 @@ def printXGBFeatureImportances(featurenames, xgbTree, save_figure=False, figure_
         for i, feature in enumerate(featureNames):
             f.write("%d\t%s\tq\n" % (i, feature))
 
-    importances = xgb.plot_importance(xgbTree.booster().get_fscore(fmap="xgb.fmap"))
+    importances = xgbTree.booster().get_fscore(fmap="xgb.fmap")
     importances = sorted(importances.items(), key=operator.itemgetter(1))
 
     df = pd.DataFrame(importances, columns=['feature', 'fscore'])
@@ -93,12 +93,12 @@ def printXGBFeatureImportances(featurenames, xgbTree, save_figure=False, figure_
         sns.plt.title('XGBoost Feature Importance')
         sns.plt.xlabel('relative importance')
         sns.plt.show()
+        if save_figure: sns.plt.gcf().savefig(figure_name)
     else:
         plt.title('XGBoost Feature Importance')
         plt.xlabel('relative importance')
         plt.show()
-
-    if save_figure: plt.gcf().savefig(figure_name)
+        if save_figure: plt.gcf().savefig(figure_name)
 
     if remove_feature_map:
         import os
