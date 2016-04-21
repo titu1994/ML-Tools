@@ -88,19 +88,17 @@ def printXGBFeatureImportances(featurenames, xgbTree, save_figure=False, figure_
     df['fscore'] = df['fscore'] / df['fscore'].sum()
 
     if snsAvailable:
-        sns.plt.figure()
         df.plot(kind='barh', x='feature', y='fscore', legend=False)
         sns.plt.title('XGBoost Feature Importance')
         sns.plt.xlabel('relative importance')
-        sns.plt.show()
-        if save_figure: sns.plt.gcf().savefig(figure_name)
+        if save_figure: sns.plt.savefig(figure_name)
+        else: sns.plt.show()
     else:
-        plt.figure()
         df.plot(kind='barh', x='feature', y='fscore', legend=False)
         plt.title('XGBoost Feature Importance')
         plt.xlabel('relative importance')
-        plt.show()
-        if save_figure: plt.gcf().savefig(figure_name)
+        if save_figure: plt.savefig(figure_name)
+        else: plt.show()
 
     if remove_feature_map:
         import os
