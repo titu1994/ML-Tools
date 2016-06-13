@@ -1,9 +1,9 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
         name='ML-Tools',
-        version='1.0.6',
-        packages=['MLScripts', 'MLScripts.Ensemble'],
+        version='1.0.7',
+        packages=find_packages(),
         url='',
         license='',
         author='Somshubra Majumdar',
