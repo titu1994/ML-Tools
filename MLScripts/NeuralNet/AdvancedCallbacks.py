@@ -4,10 +4,6 @@ class HistoryCheckpoint(Callback):
     '''Callback that records events
         into a `History` object.
 
-        This callback is automatically applied to
-        every Keras model. The `History` object
-        gets returned by the `fit` method of models.
-
         It then saves the history after each epoch into a file.
         To read the file into a python dict:
             history = {}
@@ -15,7 +11,6 @@ class HistoryCheckpoint(Callback):
                 history = eval(f.read())
 
         This may be unsafe since eval() will evaluate any string
-
         A safer alternative:
 
         import ast

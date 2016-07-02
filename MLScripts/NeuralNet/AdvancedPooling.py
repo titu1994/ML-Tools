@@ -2,6 +2,11 @@ from keras.layers.convolutional import _Pooling1D, _Pooling2D, _Pooling3D
 import keras.backend as K
 
 class MaxAveragePool1D(_Pooling1D):
+    """
+    Combination of MaxPooling and AveragePooling offers the best learning according to the paper
+    'Systematic evaluation of CNN advances on the ImageNet' (http://arxiv.org/pdf/1606.02228v2.pdf)
+
+    """
 
     def __init__(self, pool_length=2, stride=None,
                  border_mode='valid', **kwargs):
@@ -19,16 +24,21 @@ class MaxAveragePool1D(_Pooling1D):
 
 
 class MaxAveragePool2D(_Pooling2D):
+    """
+    Combination of MaxPooling and AveragePooling offers the best learning according to the paper
+    'Systematic evaluation of CNN advances on the ImageNet' (http://arxiv.org/pdf/1606.02228v2.pdf)
+
+    """
 
     def __init__(self, pool_size=(2, 2), strides=None, border_mode='valid',
                  dim_ordering=K.image_dim_ordering(), **kwargs):
         super(MaxAveragePool2D, self).__init__(pool_size, strides, border_mode,
                                            dim_ordering, **kwargs)
 
-    def _pooling_function(self, inputs, pool_size, strides,
-                              border_mode, dim_ordering):
-        output1 = K.pool2d(inputs, pool_size, strides,
-                  border_mode, dim_ordering, pool_mode='max')
-        output2 = K.pool2d(inputs, pool_size, strides,
-                     border_mode, dim_ordering, pool_mode='avg')
+    def _pooling_function(self, inputs, pool_size, strides, border_mode, dim_ordering):
+        '''
+        This pooling operation is basically the sum of both MaxPooling and AveragePooling outputs.
+        '''
+        output1 = K.pool2d(inputs, pool_size, strides, border_mode, dim_ordering, pool_mode='max')
+        output2 = K.pool2d(inputs, pool_size, strides, border_mode, dim_ordering, pool_mode='avg')
         return output1 + output2
