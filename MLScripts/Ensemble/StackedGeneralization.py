@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 from sklearn.base import BaseEstimator, ClassifierMixin
 from copy import copy
@@ -146,7 +146,7 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
             model_name = "%s" % self.blending_model.__repr__()
             print('Fitting Blending Model:\n%s' % model_name)
 
-        kf = list(KFold(y.shape[0], self.n_folds))
+        kf = list(KFold(self.n_folds))
         # run  CV
         self.blending_model_cv = []
 
@@ -157,7 +157,7 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
             X_train = X_blend[train_idx]
             y_train = y[train_idx]
 
-            model = copy(self.blending_model)
+            model = copy(self.blending_model) 
 
             model.fit(X_train, y_train)
 

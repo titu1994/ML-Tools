@@ -8,9 +8,19 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-import keras.models as keras_models
-from keras.utils.np_utils import to_categorical
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+
+def check_module_exists(modulename):
+    try:
+        __import__(modulename)
+    except ImportError:
+        return False
+    return True
+
+
+if check_module_exists('keras'):
+    import keras.models as keras_models
+    from keras.utils.np_utils import to_categorical
+    from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 
 def get_predictions(model, X):
     if hasattr(model, 'predict_proba'): # Normal SKLearn classifiers
@@ -24,14 +34,6 @@ def get_predictions(model, X):
             pred = pred[:, None]
 
     return pred
-
-
-def check_module_exists(modulename):
-    try:
-        __import__(modulename)
-    except ImportError:
-        return False
-    return True
 
 
 class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
@@ -122,44 +124,48 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
 
                 model = copy(blend_model)
 
-                if isinstance(model, keras_models.Model) or isinstance(model, keras_models.Sequential):
-                    model_path = 'models/stack/keras_model_%d_cv_%d' % (model_id + 1, j + 1)
-                    checkpoint = ModelCheckpoint(model_path,
-                                                 monitor='val_fbeta_score', verbose=1,
-                                                 save_best_only=True, save_weights_only=True,
-                                                 mode='max')
+                if check_module_exists('keras'):
+                    if isinstance(model, keras_models.Model) or isinstance(model, keras_models.Sequential):
+                        model_path = 'models/stack/keras_model_%d_cv_%d' % (model_id + 1, j + 1)
+                        checkpoint = ModelCheckpoint(model_path,
+                                                     monitor='val_fbeta_score', verbose=1,
+                                                     save_best_only=True, save_weights_only=True,
+                                                     mode='max')
 
-                    reduce_lr = ReduceLROnPlateau(monitor='val_fbeta_score', patience=5, mode='max',
-                                                  factor=0.8, cooldown=5, min_lr=1e-6, verbose=2)
+                        reduce_lr = ReduceLROnPlateau(monitor='val_fbeta_score', patience=5, mode='max',
+                                                      factor=0.8, cooldown=5, min_lr=1e-6, verbose=2)
 
-                    y_train_categorical = to_categorical(y_train, 3)
-                    y_test_categorical = to_categorical(y_test, 3)
+                        y_train_categorical = to_categorical(y_train, 3)
+                        y_test_categorical = to_categorical(y_test, 3)
 
-                    model.fit(X_train, y_train_categorical, batch_size=128, nb_epoch=50, callbacks=[checkpoint, reduce_lr],
-                              validation_data=(X_test, y_test_categorical))
+                        model.fit(X_train, y_train_categorical, batch_size=128, nb_epoch=50, callbacks=[checkpoint, reduce_lr],
+                                  validation_data=(X_test, y_test_categorical))
 
-                    model.load_weights(model_path)
+                        model.load_weights(model_path)
 
-                    preds = model.predict(X_test, batch_size=128)
-                    preds = np.argmax(preds, axis=1)
+                        preds = model.predict(X_test, batch_size=128)
+                        preds = np.argmax(preds, axis=1)
 
-                    score = f1_score(y_test, preds)
-                    print('Keras Model %d - CV %d Score : %0.3f' % (model_id + 1, j + 1, score))
+                        score = f1_score(y_test, preds)
+                        print('Keras Model %d - CV %d Score : %0.3f' % (model_id + 1, j + 1, score))
 
-                else:
-                    model_path = 'models/stack/sklearn_model_%d_cv_%d' % (model_id + 1, j + 1)
-                    model.fit(X_train, y_train)
+                        # add trained model to list of CV'd models
+                        self.blending_model_cv.append(model)
+                        continue
 
-                    preds = get_predictions(model, X_test)
-                    preds = np.argmax(preds, axis=1)
+                model_path = 'models/stack/sklearn_model_%d_cv_%d' % (model_id + 1, j + 1)
+                model.fit(X_train, y_train)
 
-                    score = f1_score(y_test, preds)
-                    print('SKLearn Model %d - CV %d Score : %0.3f' % (model_id + 1, j + 1, score))
+                preds = get_predictions(model, X_test)
+                preds = np.argmax(preds, axis=1)
 
-                    joblib.dump(model, model_path)
+                score = f1_score(y_test, preds)
+                print('SKLearn Model %d - CV %d Score : %0.3f' % (model_id + 1, j + 1, score))
 
+                joblib.dump(model, model_path)
                 # add trained model to list of CV'd models
                 self.blending_model_cv.append(model)
+
 
     def _transformBlendingModel(self, X_blend):
         # make predictions from averaged models
