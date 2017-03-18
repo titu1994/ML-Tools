@@ -132,8 +132,8 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
                 print('Fitting Blending Model:\n%s' % model_name)
 
             self.blending_model_cv = []
-
-            for j, (train_idx, test_idx) in enumerate(StratifiedKFold(self.n_folds, shuffle=True, random_state=1000)):
+            skf = StratifiedKFold(self.n_folds, shuffle=True, random_state=1000)
+            for j, (train_idx, test_idx) in enumerate(skf.split(X_blend, y)):
                 if self.verbose:
                     print('Fold %d' % j)
 
