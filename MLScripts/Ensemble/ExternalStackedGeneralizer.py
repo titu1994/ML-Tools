@@ -50,6 +50,22 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
         Trains a series of base models using K-fold cross-validation, then combines
         the predictions of each model into a set of features that are used to train
         a high-level classifier model.
+
+        Example:
+        Save predictions of various models using model.predict_proba() and obtain the numpy arrays :
+        predictions = model.predict_proba(X)
+
+        Then save the predictions in some directory with appropriate name :
+        np.save(prediction_dir + 'model_name.npy', predictions)
+
+        Once you have stored the predictions of various models, use this model
+        >>> model1 = "... some model"
+        >>> model2 = "... another model"
+        >>> models = [model1, model2]
+        >>> stack = ExternalStackedGeneralizer(predictions_dir, models, n_folds=10)
+        >>> stack.fit(None, y) # Note, X isnt required here
+        >>> stack.predict(X)
+
         Parameters
         -----------
         predictions_dir: path of the folder with the saved numpy predictions
