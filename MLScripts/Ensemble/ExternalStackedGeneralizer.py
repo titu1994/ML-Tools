@@ -81,21 +81,54 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
         self.n_folds = n_folds
         self.verbose = verbose
 
-    def fit(self, X, y):
-        X_blend = self._fitTransformBaseModels()
-        self._fitBlendingModel(X_blend, y)
+    def fit(self, X_indices, y):
+        '''
+        X_indices is the indices of input data points which correspond to
+        the labels in y.
 
-    def predict(self, X):
+        Used when performing crossvalidation over StackedGeneratlizer model
+        Can be None, to indicate full training over all data points.
+        '''
+        X_blend = self._fitTransformBaseModels(self.predictions_dir)
+
+        if X_indices is not None:
+            self._fitBlendingModel(X_blend[X_indices], y)
+        else:
+            self._fitBlendingModel(X_blend, y)
+
+    def predict(self, pred_directory, X_indices=None):
+        '''
+        Predictions use the input predictions from a directory of numpy files,
+        therefore you must supply path of directory where the test time predictions are kept
+        '''
         # perform model averaging to get predictions
-        X_blend = self._transformBaseModels()
-        predictions = self._transformBlendingModel(X_blend)
+        predictions_dir = pred_directory if pred_directory is not None else self.predictions_dir
+
+        X_blend = self._transformBaseModels(predictions_dir)
+
+        if X_indices is not None:
+            predictions = self._transformBlendingModel(X_blend[X_indices])
+        else:
+            predictions = self._transformBlendingModel(X_blend)
+
         pred_classes = np.argmax(predictions, axis=1)
         return pred_classes
 
-    def predict_proba(self, X):
+    def predict_proba(self, pred_directory, X_indices=None):
+        '''
+        Predictions use the input predictions from a directory of numpy files,
+        therefore you must supply path of directory where the test time predictions are kept
+        '''
         # perform model averaging to get predictions
-        X_blend = self._transformBaseModels()
-        predictions = self._transformBlendingModel(X_blend)
+        predictions_dir = pred_directory if pred_directory is not None else self.predictions_dir
+
+        X_blend = self._transformBaseModels(predictions_dir)
+
+        if X_indices is not None:
+            predictions = self._transformBlendingModel(X_blend[X_indices])
+        else:
+            predictions = self._transformBlendingModel(X_blend)
+
         return predictions
 
     def evaluate(self, y, y_pred):
@@ -104,11 +137,11 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
         print(confusion_matrix(y, y_pred))
         return(accuracy_score(y, y_pred))
 
-    def _transformBaseModels(self):
+    def _transformBaseModels(self, prediction_dir):
         # predict via model averaging
         predictions = []
 
-        base_dir = self.predictions_dir
+        base_dir = prediction_dir
         path = base_dir + "*.npy"
 
         files = glob.glob(path)
@@ -122,18 +155,23 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
         if self.verbose: print('Loaded predictions. Shape : ', predictions.shape)
         return predictions
 
-    def _fitTransformBaseModels(self):
-        return self._transformBaseModels()
+    def _fitTransformBaseModels(self, prediction_dir):
+        return self._transformBaseModels(prediction_dir)
 
     def _fitBlendingModel(self, X_blend, y):
+        self.blending_model_cv = []
+
         for model_id, blend_model in enumerate(self.blending_models):
+            scores = []
+
             if self.verbose:
                 model_name = "%s" % blend_model.__repr__()
                 print('Fitting Blending Model:\n%s' % model_name)
 
-            self.blending_model_cv = []
             skf = StratifiedKFold(self.n_folds, shuffle=True, random_state=1000)
             for j, (train_idx, test_idx) in enumerate(skf.split(X_blend, y)):
+
+
                 if self.verbose:
                     print('Fold %d' % j)
 
@@ -165,6 +203,7 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
                         preds = np.argmax(preds, axis=1)
 
                         score = f1_score(y_test, preds)
+                        scores.append(score)
                         print('Keras Model %d - CV %d Score : %0.3f' % (model_id + 1, j + 1, score))
 
                         # add trained model to list of CV'd models
@@ -178,11 +217,14 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
                 preds = np.argmax(preds, axis=1)
 
                 score = f1_score(y_test, preds)
+                scores.append(score)
                 print('SKLearn Model %d - CV %d Score : %0.3f' % (model_id + 1, j + 1, score))
 
                 joblib.dump(model, model_path)
                 # add trained model to list of CV'd models
                 self.blending_model_cv.append(model)
+
+            print('Average F1 score of model : ', sum(scores) / len(scores))
 
 
     def _transformBlendingModel(self, X_blend):
@@ -191,6 +233,8 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
         n_models = len(self.blending_model_cv)
 
         for i, model in enumerate(self.blending_model_cv):
+            if self.verbose: print('Getting predictions from blending model %s (Classifier id %d)' %
+                                   (model.__class__.__name__, i + 1))
             cv_predictions = None
             model_predictions = get_predictions(model, X_blend)
 
