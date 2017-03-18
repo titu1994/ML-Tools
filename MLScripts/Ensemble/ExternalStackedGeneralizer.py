@@ -113,11 +113,13 @@ class ExternalStackedGeneralizer(BaseEstimator, ClassifierMixin):
 
         files = glob.glob(path)
         for file in files:
+            if self.verbose: print('Loading numpy file %s' % (file))
             cv_predictions = np.load(file)
             predictions.append(cv_predictions.mean(axis=0))
 
         # concat all features
         predictions = np.hstack(predictions)
+        if self.verbose: print('Loaded predictions. Shape : ', predictions.shape)
         return predictions
 
     def _fitTransformBaseModels(self):
