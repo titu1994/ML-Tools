@@ -4,14 +4,16 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 from sklearn.base import BaseEstimator, ClassifierMixin
 from copy import copy
 
-def getPredictions(model, X):
-    if hasattr(model, 'predict_proba'):
+def get_predictions(model, X):
+    if hasattr(model, 'predict_proba'): # Normal SKLearn classifiers
         pred = model.predict_proba(X)
+    elif hasattr(model, '_predict_proba_lr'): # SVMs
+        pred = model._predict_proba_lr(X)
     else:
         pred = model.predict(X)
 
     if len(pred.shape) == 1:  # for 1-d ouputs
-            pred = pred[:,None]
+            pred = pred[:, None]
 
     return pred
 
@@ -121,7 +123,7 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
             cv_predictions = None
             n_models = len(self.base_models_cv[key])
             for i, model in enumerate(self.base_models_cv[key]):
-                model_predictions = getPredictions(model, X)
+                model_predictions = get_predictions(model, X)
 
                 if cv_predictions is None:
                     cv_predictions = np.zeros((n_models, X.shape[0], model_predictions.shape[1]))
@@ -195,7 +197,7 @@ class StackedGeneralizer(BaseEstimator, ClassifierMixin):
         n_models = len(self.blending_model_cv)
         for i, model in enumerate(self.blending_model_cv):
             cv_predictions = None
-            model_predictions = getPredictions(model, X_blend)
+            model_predictions = get_predictions(model, X_blend)
 
             if cv_predictions is None:
                 cv_predictions = np.zeros((n_models, X_blend.shape[0], model_predictions.shape[1]))
