@@ -59,7 +59,7 @@ class SoftVoteClassifier(BaseEstimator, ClassifierMixin):
         self.normalize_weights = normalize_weights
 
         if self.normalize_weights:
-            weight_sum = np.sum(np.asarray(weights))
+            weight_sum = np.sum(np.asarray(weights, dtype=np.float32))
             weights = [w / weight_sum for w in weights]
             self.weights = weights
         else:
