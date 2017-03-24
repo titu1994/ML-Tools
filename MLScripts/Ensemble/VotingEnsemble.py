@@ -3,16 +3,17 @@ from sklearn.base import ClassifierMixin
 import numpy as np
 import warnings
 
+
 def get_predictions(model, X):
-    if hasattr(model, 'predict_proba'): # Normal SKLearn classifiers
+    if hasattr(model, 'predict_proba'):  # Normal SKLearn classifiers
         pred = model.predict_proba(X)
-    elif hasattr(model, '_predict_proba_lr'): # SVMs
+    elif hasattr(model, '_predict_proba_lr'):  # SVMs
         pred = model._predict_proba_lr(X)
     else:
         pred = model.predict(X)
 
     if len(pred.shape) == 1:  # for 1-d ouputs
-            pred = pred[:, None]
+        pred = pred[:, None]
 
     return pred
 
@@ -23,6 +24,7 @@ def check_module_exists(modulename):
     except ImportError:
         return False
     return True
+
 
 if check_module_exists('xgboost'):
     import xgboost as xgb
@@ -44,11 +46,24 @@ class SoftVoteClassifier(BaseEstimator, ClassifierMixin):
         If a list of weights (`float` or `int`) is provided, the averaged raw probabilities (via `predict_proba`)
         will be used to determine the most confident class label.
 
+    normalize_weights : bool (default: False)
+      If True, will normalize the weights provided so that they sum up to 1.0
+
+    verbose : bool (default: False)
+      If True, will print out information about model prediction
     """
-    def __init__(self, clfs, weights=None, verbose=False):
+
+    def __init__(self, clfs, weights=None, normalize_weights=False, verbose=False):
         self.clfs = clfs
-        self.weights = weights
         self.verbose = verbose
+        self.normalize_weights = normalize_weights
+
+        if self.normalize_weights:
+            weight_sum = np.sum(np.asarray(weights))
+            weights = [w / weight_sum for w in weights]
+            self.weights = weights
+        else:
+            self.weights = weights
 
     def fit(self, X, y):
         """
@@ -88,8 +103,8 @@ class SoftVoteClassifier(BaseEstimator, ClassifierMixin):
         data = X
         for name, clf in self.clfs:
             if check_module_exists('xgboost'):
-                if isinstance(clf, xgb.Booster): # XGBoost model, needs DMatrix for data
-                    if not hasattr(data, 'feature_names'): # data is numpy array, convert to DMatrix
+                if isinstance(clf, xgb.Booster):  # XGBoost model, needs DMatrix for data
+                    if not hasattr(data, 'feature_names'):  # data is numpy array, convert to DMatrix
                         data = xgb.DMatrix(X)
 
             self.probas_.append(get_predictions(clf, data))
@@ -125,8 +140,8 @@ class SoftVoteClassifier(BaseEstimator, ClassifierMixin):
         data = X
         for name, clf in self.clfs:
             if check_module_exists('xgboost'):
-                if isinstance(clf, xgb.Booster): # XGBoost model, needs DMatrix for data
-                    if not hasattr(data, 'feature_names'): # data is numpy array, convert to DMatrix
+                if isinstance(clf, xgb.Booster):  # XGBoost model, needs DMatrix for data
+                    if not hasattr(data, 'feature_names'):  # data is numpy array, convert to DMatrix
                         data = xgb.DMatrix(X)
 
             self.probas_.append(get_predictions(clf, data))
